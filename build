@@ -3,5 +3,6 @@
 tsc -p tsconfig.json
 
 cp package.json dist
+cp README.md dist
 
 json -f package.json -e 'delete this.devDependencies' -e 'this.types = "index.d.ts"' -e 'delete this.scripts' > ./dist/package.json
