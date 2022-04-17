@@ -1,4 +1,4 @@
-import { validation } from "./validation";
+import { validation } from ".";
 import * as Yup from "yup";
 import type { Request, Response } from "express";
 
