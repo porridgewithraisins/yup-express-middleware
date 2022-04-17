@@ -2,6 +2,11 @@
     "name": "yup-express-middleware",
     "version": "1.0.0",
     "description": "Express middleware for yup validation",
+    "keywords": [
+        "yup",
+        "express",
+        "validation"
+    ],
     "license": "MIT",
     "author": "Santhanam <santhanambr2002@gmail.com>",
     "bugs": {
