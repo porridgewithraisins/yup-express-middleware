@@ -10,8 +10,9 @@ or
 
 ## Features
 
-1. `req.body` or `req.query` or `req.params` will be typed according to your validation schema.
-
+1. `req.body` and/or `req.query` can be validated
+2. Yup transformations supported
+3. `req.body` and/or `req.query` will be of the type of your schema in your controller!
 
 ## Usage
 
@@ -30,9 +31,15 @@ const schema = yup.object().shape({
         .transform(val => val + 2),
 });
 
-app.post("/", validation(schema), (req, res, next) => {
+const schema2 = yup.object({ bla: yup.object({ bloo: yup.string() }) });
+
+app.post("/", validation({ body: schema, query: schema2 }), (req, res, next) => {
     const { name, age } = req.body;
     //  string^   ^number => validated, transformed (if the schema did so) and typed correctly
+
+    const {
+        bla: { bloo }, // bloo is typed correctly as string
+    } = req.query;
 });
 ```
 
@@ -53,7 +60,10 @@ class BadRequestError extends HttpError {
 
 app.post(
     "/",
-    validation(schema, { yupOptions: { abortEarly: false }, ErrorClass: BadRequestError }),
+    validation(
+        { body: schema },
+        { yupOptions: { abortEarly: false }, ErrorClass: BadRequestError }
+    ),
     (req, res, next) => {
         // If validation fails, this won't get called
         // the middleware will call `next(new BadRequestError("the message provided by yup"))`
@@ -65,13 +75,11 @@ app.post(
 
 app.use(((err, req, res, next) => {
     if (res.headersSent) next(err);
-    if (err.name === "BadRequestError" /* the name of your custom error */) {
+    if (err.name === "BadRequestError") {
         res.status(err.status).json({
             reason: "Validation Error",
             error: err.message,
         });
-    } else {
-        //...
     }
 }) as ErrorRequestHandler);
 ```
@@ -82,7 +90,9 @@ app.use(((err, req, res, next) => {
 
 validation(schema, options);
 
-schema: a yup schema
+schema:
+    body: (optional) yup schema
+    query: (optional) yup schema
 
 options:
 
@@ -91,6 +101,5 @@ options:
     ErrorClass: The error class to throw when validation fails (defaults to `Error`)
 
     finallyFunction: the function to call regardless of whether validation succeeds or fails)
-
 
 ```
