@@ -3,37 +3,43 @@ import type { AssertsShape, ObjectShape, TypeOfShape } from "yup/lib/object";
 import type { Request, Response, NextFunction } from "express";
 import type { AnyObject, ValidateOptions } from "yup/lib/types";
 
-type AsyncRequestHandler<T> = (
-    req: Request<{}, {}, T>,
+export type AsyncRequestHandler<Body, Query> = (
+    req: Request<{}, {}, Body, Query>,
     res: Response,
     next: NextFunction
 ) => Promise<any>;
 
-/**
- * Validates the request body against the given schema. If validation succeeds, `req.body`
- * Will contain the validated, properly typed body. If validation fails, it will call `next()`
- * with the `ErrorClass` you provide, instantiated with the validation message yup provided.
- *
- * @param schema The schema to validate the request body against
- * @param ErrorClass The error class to instantiate and pass to `next()` if validation fails
- * @param [options] Will be passed through to `schema.validate(req.body, options)`
- * @param [finallyFunction] Will be called after validation has succeeded or failed, for cleanup, etc,.
- * @returns An express request handler
- */
+export interface ValidationOptions {
+    yupOptions?: ValidateOptions<AnyObject>;
+    ErrorClass?: new (message?: string) => Error;
+    finallyFunction?: CallableFunction;
+}
+
+export interface Schema<Body extends ObjectShape, Query extends ObjectShape> {
+    body?: Yup.ObjectSchema<Body>;
+    query?: Yup.ObjectSchema<Query>;
+}
+
+export type YupReturnType<T extends ObjectShape> =
+    | AssertsShape<T>
+    | Extract<TypeOfShape<T>, null | undefined>;
+
 export const validation =
-    <T extends ObjectShape>(
-        schema: Yup.ObjectSchema<T>,
-        ErrorClass: new (message?: string) => Error,
-        options?: ValidateOptions<AnyObject>,
-        finallyFunction?: CallableFunction
-    ): AsyncRequestHandler<AssertsShape<T> | Extract<TypeOfShape<T>, null | undefined>> =>
+    <Body extends ObjectShape, Query extends ObjectShape>(
+        schema: Schema<Body, Query>,
+        options?: ValidationOptions
+    ): AsyncRequestHandler<YupReturnType<Body>, YupReturnType<Query>> =>
     async (req, _res, next) => {
         try {
-            req.body = await schema.validate(req.body, options);
+            if (schema.body) req.body = await schema.body.validate(req.body, options?.yupOptions);
+            if (schema.query)
+                req.query = await schema.query.validate(req.query, options?.yupOptions);
             next();
         } catch (err: any) {
+            const ErrorClass = options?.ErrorClass || Error;
             next(new ErrorClass(err.errors.join()));
         } finally {
-            if (finallyFunction) finallyFunction();
+            if (options?.finallyFunction) options.finallyFunction();
         }
     };
+

@@ -10,7 +10,7 @@ test("Body that passes validation should be passed through", async () => {
             .transform(val => val + 2),
     });
 
-    const handler = validation(schema, Error, { abortEarly: false });
+    const handler = validation({ body: schema }, { yupOptions: { abortEarly: false } });
 
     const req = {
         body: {
@@ -23,7 +23,7 @@ test("Body that passes validation should be passed through", async () => {
 
     const next = jest.fn();
 
-    await handler(req as Request, res as Response, next);
+    await handler(req as any, res as Response, next);
 
     expect(req.body).toEqual({
         name: "John",
@@ -31,7 +31,7 @@ test("Body that passes validation should be passed through", async () => {
     });
 });
 
-test("Body that fails validation should throw the custom error, and original body should not be modified", async () => {
+test("Query that fails validation should throw the custom error, and original query should not be modified", async () => {
     const schema = Yup.object().shape({
         name: Yup.string().required(),
         age: Yup.number()
@@ -48,10 +48,10 @@ test("Body that fails validation should throw the custom error, and original bod
         }
     }
 
-    const handler = validation(schema, CustomError);
+    const handler = validation({ query: schema }, { ErrorClass: CustomError });
 
     const req = {
-        body: {
+        query: {
             name: "John",
             age: "6",
         },
@@ -61,10 +61,10 @@ test("Body that fails validation should throw the custom error, and original bod
 
     const next = jest.fn();
 
-    await handler(req as Request, res as Response, next);
+    await handler(req as any, res as Response, next);
 
     expect(next).toHaveBeenCalledWith(new CustomError("Too old"));
-    expect(req.body).toEqual({
+    expect(req.query).toEqual({
         name: "John",
         age: "6",
     });
