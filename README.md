@@ -13,6 +13,7 @@ or
 1. `req.body` and/or `req.query` can be validated
 2. Yup transformations supported
 3. `req.body` and/or `req.query` will be of the type of your schema in your controller!
+4. No messy try-catch validation handling in your controllers, this library will automatically call express' error route handler (optionally with a custom error you can define).
 
 ## Usage
 
